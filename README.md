@@ -1,167 +1,55 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/QtRYN9D3)
-[![Open in Codespaces](https://classroom.github.com/assets/launch-codespace-2972f46106e565e64193e422d61a12cf1da4916b45550586e14ef0a7c637dd04.svg)](https://classroom.github.com/open-in-codespaces?assignment_repo_id=23668997)
+# Práctica 4.2 — Variante B: Código HTTP más frecuente
 
-# Práctica 1
+## Descripción
+Programa en ARM64 Assembly que lee códigos de estado HTTP desde stdin
+y determina cuál aparece con mayor frecuencia.
 
-## Implementación de un Mini Cloud Log Analyzer en ARM64
+## Diseño y lógica
 
-**Modalidad:** Individual
-**Entorno de trabajo:** AWS Ubuntu ARM64 + GitHub Classroom
-**Lenguaje:** ARM64 Assembly (GNU Assembler) + Bash + GNU Make
+1. **Inicialización**: El array `freq` de 500 entradas (4 bytes c/u) se
+   pone a cero manualmente usando un loop con `str wzr`.
 
----
+2. **Lectura**: Syscall `read` (x8=63) lee stdin en bloques de 4096 bytes.
+   El loop se repite hasta recibir EOF (retorno = 0).
 
-## Introducción
+3. **Parseo**: Se recorre el buffer byte a byte. Al encontrar 3 dígitos
+   ASCII consecutivos se reconstruye el número entero multiplicando por
+   potencias de 10.
 
-Los sistemas modernos de cómputo en la nube generan continuamente registros (*logs*) que permiten monitorear el estado de servicios, detectar fallas y activar alertas ante eventos críticos.
+4. **Conteo**: Si el código está en rango 100–599 se incrementa
+   `freq[código - 100]`. El offset en bytes se calcula con shift left 2
+   (equivalente a multiplicar por 4).
 
-En esta práctica se desarrollará un módulo simplificado de análisis de logs, implementado en **ARM64 Assembly**, inspirado en tareas reales de monitoreo utilizadas en sistemas cloud, observabilidad y administración de infraestructura.
+5. **Máximo**: Se escanea `freq[]` completo guardando el índice con el
+   valor más alto.
 
-El programa procesará códigos de estado HTTP suministrados mediante entrada estándar (stdin):
+6. **Salida**: Se imprime el mensaje fijo y el código convertido a ASCII
+   dígito por dígito usando `udiv` y `msub`.
 
-```bash id="y1gcmc"
-cat logs.txt | ./analyzer
-```
+## Syscalls Linux ARM64 utilizadas
 
----
-
-## Objetivo general
-
-Diseñar e implementar, en lenguaje ensamblador ARM64, una solución para procesar registros de eventos y detectar condiciones definidas según la variante asignada.
-
----
-
-## Objetivos específicos
-
-El estudiante aplicará:
-
-* programación en ARM64 bajo Linux
-* manejo de registros
-* direccionamiento y acceso a memoria
-* instrucciones de comparación
-* estructuras iterativas en ensamblador
-* saltos condicionales
-* uso de syscalls Linux
-* compilación con GNU Make
-* control de versiones con GitHub Classroom
-
-Estos temas se alinean con contenidos clásicos de flujo de control, herramientas GNU, manejo de datos y convenciones de programación en ensamblador.   
-
----
-
-## Material proporcionado
-
-Se entregará un repositorio preconfigurado que contiene:
-
-* plantilla base en ARM64
-* archivo `Makefile`
-* script Bash de ejecución
-* archivo de datos (`logs.txt`)
-* pruebas iniciales
-* secciones marcadas con `TODO`
-
-El estudiante deberá completar la lógica correspondiente.
-
----
-
-## Variantes de la práctica
-
-### Variante A
-
-Contabilizar:
-
-* respuestas exitosas (2xx)
-* errores del cliente (4xx)
-* errores del servidor (5xx)
-
----
-
-### Variante B
-
-Determinar el código de estado más frecuente.
-
----
-
-### Variante C
-
-Detectar el primer evento crítico (503).
-
----
-
-### Variante D
-
-Detectar tres errores consecutivos.
-
----
-
-### Variante E
-
-Calcular índice de salud:
-
-```text id="2u4vvx"
-Health Score = 100 - (errores × 10)
-```
-
----
+| Nombre | Número | Uso               |
+|--------|--------|-------------------|
+| read   | 63     | Leer stdin        |
+| write  | 64     | Imprimir resultado|
+| exit   | 93     | Terminar proceso  |
 
 ## Compilación
 
-```bash id="bmubtb"
+```bash
 make
 ```
 
----
-
 ## Ejecución
 
-```bash id="gcqlf2"
-cat logs.txt | ./analyzer
+```bash
+cat logs_B.txt | ./analyzer
 ```
 
----
+## Prueba manual
 
-## Entregables
+```bash
+printf "200\n200\n404\n200\n500\n" | ./analyzer
+```
 
-Cada estudiante deberá entregar en su repositorio:
-
-* archivo fuente ARM64 funcional
-* solución implementada
-* README explicando diseño y lógica utilizada
-* evidencia de ejecución
-* commits realizados en GitHub Classroom
-
----
-
-## Criterios de evaluación
-
-| Criterio                    | Ponderación |
-| --------------------------- | ----------- |
-| Compilación correcta        | 20%         |
-| Correctitud de la solución  | 35%         |
-| Uso adecuado de ARM64       | 25%         |
-| Documentación y comentarios | 10%         |
-| Evidencia de pruebas        | 10%         |
-
----
-
-## Restricciones
-
-No está permitido:
-
-* resolver la lógica en C
-* resolver la lógica en Python
-* modificar la variante asignada
-* omitir el uso de ARM64 Assembly
-
----
-
-## Competencia a desarrollar
-
-Comprender cómo un problema de procesamiento de datos es implementado a nivel máquina mediante instrucciones ARM64.
-
----
-
-## Nota
-
-Aunque este problema puede resolverse fácilmente en lenguajes de alto nivel, el propósito de la práctica es implementar **cómo lo resolvería la arquitectura**, no únicamente obtener el resultado.
-
+Salida esperada: `Most frequent status code: 200`
